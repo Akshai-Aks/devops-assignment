@@ -13,7 +13,7 @@ def client():
 def test_index(client):
     response = client.get("/")
     assert response.status_code == 200
-    assert response.get_json()["status"] == "ok"
+    assert b"DevOps Assignment App" in response.data
 
 
 def test_health(client):
@@ -58,7 +58,7 @@ def test_create_user_missing_fields(client):
 
 
 def test_create_user_no_body(client):
-    response = client.post("/users", json=None)
+    response = client.post("/users", data="", content_type="application/json")
     assert response.status_code == 400
 
 

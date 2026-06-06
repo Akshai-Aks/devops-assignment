@@ -127,8 +127,6 @@ jobs:
         env:
           SLACK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          echo "URL length: ${#SLACK_URL}"
-          echo "URL prefix: ${SLACK_URL:0:8}"
           curl -s -X POST "${SLACK_URL}" \
             -H "Content-Type: application/json" \
             -d "{\"text\":\":x: Staging deployment failed for commit ${{ github.sha }} by ${{ github.actor }}\"}"

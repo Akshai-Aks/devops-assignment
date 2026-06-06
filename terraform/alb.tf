@@ -28,9 +28,8 @@ resource "aws_lb_target_group" "app" {
 }
 
 resource "aws_lb_target_group_attachment" "app" {
-  count            = length(aws_instance.app)
   target_group_arn = aws_lb_target_group.app.arn
-  target_id        = aws_instance.app[count.index].id
+  target_id        = aws_instance.app.id
   port             = var.app_port
 }
 

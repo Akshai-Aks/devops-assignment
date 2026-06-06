@@ -50,11 +50,6 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
-variable "app_instance_count" {
-  description = "Number of EC2 application instances"
-  type        = number
-  default     = 2
-}
 
 variable "key_name" {
   description = "Name of an existing EC2 key pair for SSH access"

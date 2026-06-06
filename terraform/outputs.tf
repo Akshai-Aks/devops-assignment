@@ -15,14 +15,19 @@ output "private_subnet_ids" {
 }
 
 # Compute
-output "app_instance_ids" {
-  description = "EC2 application instance IDs"
-  value       = aws_instance.app[*].id
+output "app_instance_id" {
+  description = "EC2 application instance ID"
+  value       = aws_instance.app.id
 }
 
-output "app_instance_private_ips" {
-  description = "Private IPs of application instances"
-  value       = aws_instance.app[*].private_ip
+output "app_instance_public_ip" {
+  description = "Public IP of the application instance"
+  value       = aws_instance.app.public_ip
+}
+
+output "app_instance_private_ip" {
+  description = "Private IP of the application instance"
+  value       = aws_instance.app.private_ip
 }
 
 # Load Balancer

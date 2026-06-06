@@ -45,11 +45,11 @@ resource "aws_security_group" "app" {
   }
 
   ingress {
-    description = "SSH from within VPC"
+    description = "SSH from internet (for CI/CD deployment)"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {

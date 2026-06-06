@@ -49,22 +49,6 @@ resource "aws_internet_gateway" "main" {
   tags = merge(local.tags, { Name = "${var.project}-igw" })
 }
 
-# Elastic IP for NAT Gateway
-resource "aws_eip" "nat" {
-  vpc    = true
-
-  tags = merge(local.tags, { Name = "${var.project}-nat-eip" })
-}
-
-# NAT Gateway so private instances can reach the internet (e.g. package installs)
-resource "aws_nat_gateway" "main" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id
-
-  depends_on = [aws_internet_gateway.main]
-
-  tags = merge(local.tags, { Name = "${var.project}-nat" })
-}
 
 # Public route table
 resource "aws_route_table" "public" {
@@ -84,14 +68,9 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private route table
+# Private route table (RDS only — no internet access needed)
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
 
   tags = merge(local.tags, { Name = "${var.project}-private-rt" })
 }

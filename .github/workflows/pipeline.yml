@@ -125,5 +125,7 @@ jobs:
       - name: Notify on failure
         if: failure()
         run: |
-          echo "::error::Staging deployment failed for commit ${{ github.sha }} by ${{ github.actor }}"
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"text":":x: Staging deployment failed for commit ${{ github.sha }} by ${{ github.actor }}"}'
 

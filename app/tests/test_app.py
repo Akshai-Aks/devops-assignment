@@ -3,6 +3,12 @@ from unittest.mock import patch, MagicMock
 from app import app
 
 
+@pytest.fixture(autouse=True)
+def mock_cloudwatch():
+    with patch("app.boto3.client", return_value=MagicMock()):
+        yield
+
+
 @pytest.fixture
 def client():
     app.config["TESTING"] = True

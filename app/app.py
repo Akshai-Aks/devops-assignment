@@ -1,9 +1,60 @@
 import os
+import time
+import boto3
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
+
+_cw = None
+
+def get_cloudwatch():
+    global _cw
+    if _cw is None:
+        _cw = boto3.client("cloudwatch", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+    return _cw
+
+def put_metrics(path, latency_ms, status_code):
+    try:
+        get_cloudwatch().put_metric_data(
+            Namespace="devops-assignment/App",
+            MetricData=[
+                {
+                    "MetricName": "RequestCount",
+                    "Dimensions": [{"Name": "Endpoint", "Value": path}],
+                    "Value": 1,
+                    "Unit": "Count",
+                },
+                {
+                    "MetricName": "Latency",
+                    "Dimensions": [{"Name": "Endpoint", "Value": path}],
+                    "Value": latency_ms,
+                    "Unit": "Milliseconds",
+                },
+                {
+                    "MetricName": "ErrorCount",
+                    "Dimensions": [{"Name": "Endpoint", "Value": path}],
+                    "Value": 1 if status_code >= 400 else 0,
+                    "Unit": "Count",
+                },
+            ],
+        )
+    except Exception:
+        pass  # never let metrics failures affect the response
+
+
+@app.before_request
+def start_timer():
+    request._start_time = time.time()
+
+
+@app.after_request
+def record_metrics(response):
+    if hasattr(request, "_start_time"):
+        latency_ms = (time.time() - request._start_time) * 1000
+        put_metrics(request.path, latency_ms, response.status_code)
+    return response
 
 
 def get_db_connection():

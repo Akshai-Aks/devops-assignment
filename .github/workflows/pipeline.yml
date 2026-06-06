@@ -117,6 +117,7 @@ jobs:
               -e DB_NAME=${{ secrets.DB_NAME }} \
               -e DB_USER=${{ secrets.DB_USER }} \
               -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e AWS_REGION=${{ secrets.AWS_REGION }} \
               ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
             docker ps | grep devops-app

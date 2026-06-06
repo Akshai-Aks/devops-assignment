@@ -200,6 +200,10 @@ push to main
                             └─ Slack notification (success or failure)
 ```
 
+Slack notifications are sent to the `#devops` channel on every deployment:
+
+![Slack Alerts](docs/screenshots/slack_alert.png)
+
 To enable the manual approval gate for production:
 1. Go to **GitHub repo → Settings → Environments → New environment** → name it `production`
 2. Enable **Required reviewers** and add yourself

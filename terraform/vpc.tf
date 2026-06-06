@@ -51,7 +51,7 @@ resource "aws_internet_gateway" "main" {
 
 # Elastic IP for NAT Gateway
 resource "aws_eip" "nat" {
-  domain = "vpc"
+  vpc    = true
 
   tags = merge(local.tags, { Name = "${var.project}-nat-eip" })
 }

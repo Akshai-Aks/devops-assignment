@@ -124,12 +124,6 @@ jobs:
 
       - name: Notify on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          payload: |
-            {
-              "text": ":x: Staging deployment failed for commit ${{ github.sha }} by ${{ github.actor }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          echo "::error::Staging deployment failed for commit ${{ github.sha }} by ${{ github.actor }}"
 

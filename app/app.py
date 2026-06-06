@@ -17,27 +17,18 @@ def get_cloudwatch():
 
 def put_metrics(path, latency_ms, status_code):
     try:
+        is_error = 1 if status_code >= 400 else 0
         get_cloudwatch().put_metric_data(
             Namespace="devops-assignment/App",
             MetricData=[
-                {
-                    "MetricName": "RequestCount",
-                    "Dimensions": [{"Name": "Endpoint", "Value": path}],
-                    "Value": 1,
-                    "Unit": "Count",
-                },
-                {
-                    "MetricName": "Latency",
-                    "Dimensions": [{"Name": "Endpoint", "Value": path}],
-                    "Value": latency_ms,
-                    "Unit": "Milliseconds",
-                },
-                {
-                    "MetricName": "ErrorCount",
-                    "Dimensions": [{"Name": "Endpoint", "Value": path}],
-                    "Value": 1 if status_code >= 400 else 0,
-                    "Unit": "Count",
-                },
+                # per-endpoint breakdown
+                {"MetricName": "RequestCount", "Dimensions": [{"Name": "Endpoint", "Value": path}], "Value": 1, "Unit": "Count"},
+                {"MetricName": "Latency",      "Dimensions": [{"Name": "Endpoint", "Value": path}], "Value": latency_ms, "Unit": "Milliseconds"},
+                {"MetricName": "ErrorCount",   "Dimensions": [{"Name": "Endpoint", "Value": path}], "Value": is_error, "Unit": "Count"},
+                # aggregate (no dimensions) — needed for dashboard total widgets
+                {"MetricName": "RequestCount", "Dimensions": [], "Value": 1, "Unit": "Count"},
+                {"MetricName": "Latency",      "Dimensions": [], "Value": latency_ms, "Unit": "Milliseconds"},
+                {"MetricName": "ErrorCount",   "Dimensions": [], "Value": is_error, "Unit": "Count"},
             ],
         )
     except Exception:

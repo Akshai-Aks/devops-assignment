@@ -204,10 +204,28 @@ Slack notifications are sent to the `#devops` channel on every deployment:
 
 ![Slack Alerts](docs/screenshots/slack_alert.png)
 
-To enable the manual approval gate for production:
-1. Go to **GitHub repo → Settings → Environments → New environment** → name it `production`
-2. Enable **Required reviewers** and add yourself
-3. Every pipeline run will pause before production and wait for your approval
+### Manual Approval for Production Deployment
+
+Production deployment requires a manual approval click — it does **not** deploy automatically after staging. The pipeline pauses and waits:
+
+```
+✅ test
+✅ scan
+✅ build
+✅ deploy-staging
+⏸  deploy-production  ← waits here for manual approval
+```
+
+**One-time setup (GitHub UI):**
+1. Go to **https://github.com/Akshai-Aks/devops-assignment/settings/environments**
+2. Click **New environment** → name it exactly `production` → **Configure environment**
+3. Check **Required reviewers** → search and add your GitHub username → **Save protection rules**
+
+**How to approve a deployment:**
+1. Go to the **Actions** tab → open the latest workflow run
+2. You will see `deploy-production` in a paused state with the message *"This workflow is waiting for your review"*
+3. Click **Review deployments** → check `production` → **Approve and deploy**
+4. Production deploys and a Slack notification is sent
 
 ### GitHub Secrets required
 

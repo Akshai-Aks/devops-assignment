@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevOps Assignment App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 700px; margin: 0 auto; }
+
+    h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    p.subtitle { color: #666; margin-bottom: 32px; }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 28px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+
+    .card h2 { font-size: 1.1rem; margin-bottom: 20px; color: #444; }
+
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 6px; }
+
+    input[type="text"],
+    input[type="email"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus { border-color: #4f46e5; }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 11px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button[type="submit"]:hover { background: #4338ca; }
+    button[type="submit"]:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    .alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-top: 14px;
+      display: none;
+    }
+    .alert.success { background: #d1fae5; color: #065f46; display: block; }
+    .alert.error   { background: #fee2e2; color: #991b1b; display: block; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #f9fafb;
+      border-bottom: 2px solid #e5e7eb;
+      font-weight: 600;
+      color: #555;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .empty { text-align: center; color: #9ca3af; padding: 24px 0; font-size: 0.9rem; }
+    .badge {
+      display: inline-block;
+      background: #ede9fe;
+      color: #5b21b6;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DevOps Assignment App</h1>
+    <p class="subtitle">User Management — backed by RDS PostgreSQL</p>
+
+    <!-- Form -->
+    <div class="card">
+      <h2>Add User</h2>
+      <form id="userForm">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" placeholder="e.g. Akshai S" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="e.g. akshai@example.com" required />
+        </div>
+        <button type="submit" id="submitBtn">Save User</button>
+        <div class="alert" id="alert"></div>
+      </form>
+    </div>
+
+    <!-- User list -->
+    <div class="card">
+      <h2>Users <span class="badge" id="count">0</span></h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+        <tbody id="userTable">
+          <tr><td colspan="4" class="empty">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const form      = document.getElementById("userForm");
+    const alertBox  = document.getElementById("alert");
+    const submitBtn = document.getElementById("submitBtn");
+    const userTable = document.getElementById("userTable");
+    const countBadge = document.getElementById("count");
+
+    function showAlert(msg, type) {
+      alertBox.textContent = msg;
+      alertBox.className = "alert " + type;
+      setTimeout(() => { alertBox.className = "alert"; }, 4000);
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "-";
+      return new Date(iso).toLocaleString();
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch("/users");
+        const data = await res.json();
+        const users = data.users || [];
+        countBadge.textContent = users.length;
+
+        if (users.length === 0) {
+          userTable.innerHTML = '<tr><td colspan="4" class="empty">No users yet. Add one above.</td></tr>';
+          return;
+        }
+
+        userTable.innerHTML = users.map((u, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td>${formatDate(u.created_at)}</td>
+          </tr>
+        `).join("");
+      } catch (e) {
+        userTable.innerHTML = '<tr><td colspan="4" class="empty">Failed to load users.</td></tr>';
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Saving...";
+
+      const name  = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+
+      try {
+        const res = await fetch("/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          showAlert("User saved successfully!", "success");
+          form.reset();
+          loadUsers();
+        } else {
+          showAlert(data.error || "Something went wrong.", "error");
+        }
+      } catch (e) {
+        showAlert("Network error. Please try again.", "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Save User";
+      }
+    });
+
+    loadUsers();
+  </script>
+</body>
+</html>

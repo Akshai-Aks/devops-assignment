@@ -1,7 +1,7 @@
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
 
@@ -35,7 +35,7 @@ def init_db():
 
 @app.route("/")
 def index():
-    return jsonify({"status": "ok", "message": "DevOps Assignment App"})
+    return render_template("index.html")
 
 
 @app.route("/health")
@@ -91,7 +91,11 @@ def create_user():
         return jsonify({"error": str(e)}), 500
 
 
-if __name__ == "__main__":
+try:
     init_db()
+except Exception:
+    pass  # DB may not be available at startup in test environments
+
+if __name__ == "__main__":
     port = int(os.environ.get("APP_PORT", 5000))
     app.run(host="0.0.0.0", port=port)

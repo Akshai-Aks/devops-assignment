@@ -1,6 +1,7 @@
 import os
 import psycopg2
-from flask import Flask, jsonify
+from psycopg2.extras import RealDictCursor
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -14,6 +15,22 @@ def get_db_connection():
         password=os.environ.get("DB_PASSWORD", ""),
         connect_timeout=3,
     )
+
+
+def init_db():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id         SERIAL PRIMARY KEY,
+            name       VARCHAR(100) NOT NULL,
+            email      VARCHAR(150) UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 @app.route("/")
@@ -36,7 +53,45 @@ def db_check():
         return jsonify({"status": "error", "db": str(e)}), 500
 
 
+@app.route("/users", methods=["GET"])
+def get_users():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT id, name, email, created_at FROM users ORDER BY created_at DESC")
+        users = [dict(u) for u in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return jsonify({"users": users}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/users", methods=["POST"])
+def create_user():
+    data = request.get_json()
+    if not data or not data.get("name") or not data.get("email"):
+        return jsonify({"error": "name and email are required"}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            "INSERT INTO users (name, email) VALUES (%s, %s) RETURNING id, name, email, created_at",
+            (data["name"], data["email"]),
+        )
+        user = dict(cur.fetchone())
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"user": user}), 201
+    except psycopg2.errors.UniqueViolation:
+        return jsonify({"error": "email already exists"}), 409
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
+    init_db()
     port = int(os.environ.get("APP_PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-

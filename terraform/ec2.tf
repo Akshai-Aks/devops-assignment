@@ -8,12 +8,19 @@ data "aws_ami" "amazon_linux2" {
   }
 }
 
+resource "aws_key_pair" "app" {
+  key_name   = "${var.project}-key"
+  public_key = var.public_key
+
+  tags = merge(local.tags, { Name = "${var.project}-key" })
+}
+
 resource "aws_instance" "app" {
   ami                         = data.aws_ami.amazon_linux2.id
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public[0].id
   vpc_security_group_ids      = [aws_security_group.app.id]
-  key_name                    = var.key_name != "" ? var.key_name : null
+  key_name                    = aws_key_pair.app.key_name
   associate_public_ip_address = true
 
   user_data = base64encode(<<-EOF

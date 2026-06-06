@@ -51,10 +51,9 @@ variable "instance_type" {
 }
 
 
-variable "key_name" {
-  description = "Name of an existing EC2 key pair for SSH access"
+variable "public_key" {
+  description = "SSH public key to allow access to the EC2 instance"
   type        = string
-  default     = ""
 }
 
 variable "app_port" {

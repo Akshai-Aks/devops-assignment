@@ -65,6 +65,7 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
       "x": 0, "y": 1, "width": 8, "height": 6,
       "properties": {
         "title": "EC2 CPU Utilization",
+        "region": "${var.aws_region}",
         "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "${aws_instance.app.id}"]],
         "period": 60, "stat": "Average", "view": "timeSeries"
       }
@@ -74,6 +75,7 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
       "x": 8, "y": 1, "width": 8, "height": 6,
       "properties": {
         "title": "EC2 Memory Usage (%)",
+        "region": "${var.aws_region}",
         "metrics": [["${var.project}/System", "mem_used_percent", "InstanceId", "${aws_instance.app.id}"]],
         "period": 60, "stat": "Average", "view": "timeSeries"
       }
@@ -83,6 +85,7 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
       "x": 16, "y": 1, "width": 8, "height": 6,
       "properties": {
         "title": "EC2 Disk Usage (%)",
+        "region": "${var.aws_region}",
         "metrics": [["${var.project}/System", "disk_used_percent", "InstanceId", "${aws_instance.app.id}"]],
         "period": 60, "stat": "Average", "view": "timeSeries"
       }
@@ -92,6 +95,7 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
       "x": 0, "y": 7, "width": 8, "height": 6,
       "properties": {
         "title": "RDS CPU Utilization",
+        "region": "${var.aws_region}",
         "metrics": [["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${aws_db_instance.postgres.identifier}"]],
         "period": 60, "stat": "Average", "view": "timeSeries"
       }
@@ -101,6 +105,7 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
       "x": 8, "y": 7, "width": 8, "height": 6,
       "properties": {
         "title": "RDS Database Connections",
+        "region": "${var.aws_region}",
         "metrics": [["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", "${aws_db_instance.postgres.identifier}"]],
         "period": 60, "stat": "Average", "view": "timeSeries"
       }
@@ -110,6 +115,7 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
       "x": 16, "y": 7, "width": 8, "height": 6,
       "properties": {
         "title": "RDS Free Storage (GB)",
+        "region": "${var.aws_region}",
         "metrics": [["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", "${aws_db_instance.postgres.identifier}"]],
         "period": 60, "stat": "Average", "view": "timeSeries"
       }
@@ -137,6 +143,7 @@ resource "aws_cloudwatch_dashboard" "application" {
       "x": 0, "y": 1, "width": 8, "height": 6,
       "properties": {
         "title": "Request Count",
+        "region": "${var.aws_region}",
         "metrics": [["${var.project}/App", "RequestCount"]],
         "period": 60, "stat": "Sum", "view": "timeSeries"
       }
@@ -146,6 +153,7 @@ resource "aws_cloudwatch_dashboard" "application" {
       "x": 8, "y": 1, "width": 8, "height": 6,
       "properties": {
         "title": "Error Count (4xx + 5xx)",
+        "region": "${var.aws_region}",
         "metrics": [["${var.project}/App", "ErrorCount"]],
         "period": 60, "stat": "Sum", "view": "timeSeries"
       }
@@ -155,6 +163,7 @@ resource "aws_cloudwatch_dashboard" "application" {
       "x": 16, "y": 1, "width": 8, "height": 6,
       "properties": {
         "title": "Avg Latency (ms)",
+        "region": "${var.aws_region}",
         "metrics": [["${var.project}/App", "Latency"]],
         "period": 60, "stat": "Average", "view": "timeSeries"
       }
@@ -164,6 +173,7 @@ resource "aws_cloudwatch_dashboard" "application" {
       "x": 0, "y": 7, "width": 8, "height": 6,
       "properties": {
         "title": "ALB Request Count",
+        "region": "${var.aws_region}",
         "metrics": [["AWS/ApplicationELB", "RequestCount", "LoadBalancer", "${aws_lb.main.arn_suffix}"]],
         "period": 60, "stat": "Sum", "view": "timeSeries"
       }
@@ -173,6 +183,7 @@ resource "aws_cloudwatch_dashboard" "application" {
       "x": 8, "y": 7, "width": 8, "height": 6,
       "properties": {
         "title": "ALB 5xx Errors",
+        "region": "${var.aws_region}",
         "metrics": [["AWS/ApplicationELB", "HTTPCode_ELB_5XX_Count", "LoadBalancer", "${aws_lb.main.arn_suffix}"]],
         "period": 60, "stat": "Sum", "view": "timeSeries"
       }
@@ -182,6 +193,7 @@ resource "aws_cloudwatch_dashboard" "application" {
       "x": 16, "y": 7, "width": 8, "height": 6,
       "properties": {
         "title": "ALB Target Response Time (s)",
+        "region": "${var.aws_region}",
         "metrics": [["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "${aws_lb.main.arn_suffix}"]],
         "period": 60, "stat": "Average", "view": "timeSeries"
       }

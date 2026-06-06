@@ -122,12 +122,17 @@ jobs:
 
             docker ps | grep devops-app
 
-      - name: Notify on failure
-        if: failure()
-        env:
-          SLACK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Notify success
+        if: success()
         run: |
-          curl -s -X POST "${SLACK_URL}" \
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\":\":white_check_mark: Staging deployment succeeded for commit ${{ github.sha }} by ${{ github.actor }}\"}"
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d "{\"text\":\":x: Staging deployment failed for commit ${{ github.sha }} by ${{ github.actor }}\"}"
 

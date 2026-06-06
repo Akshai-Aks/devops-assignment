@@ -187,16 +187,23 @@ pytest tests/ -v --cov=app --cov-report=term-missing
 ```
 push to main
      │
-     ├─ test          Run unit tests + coverage
+     ├─ test               Run unit tests + coverage
      │
-     ├─ scan          pip-audit (dependency CVEs) + Trivy (container CVEs)
+     ├─ scan               pip-audit (dependency CVEs) + Trivy (container CVEs)
      │
-     ├─ build         Build Docker image → push to DockerHub
+     ├─ build              Build Docker image → push to DockerHub
      │
-     └─ deploy-staging  SSH to EC2 → pull image → restart container
-                         │
-                         └─ Slack notification (success or failure)
+     ├─ deploy-staging     SSH to EC2 → pull image → restart container
+     │                      └─ Slack notification (success or failure)
+     │
+     └─ deploy-production  Requires manual approval in GitHub Environments
+                            └─ Slack notification (success or failure)
 ```
+
+To enable the manual approval gate for production:
+1. Go to **GitHub repo → Settings → Environments → New environment** → name it `production`
+2. Enable **Required reviewers** and add yourself
+3. Every pipeline run will pause before production and wait for your approval
 
 ### GitHub Secrets required
 
@@ -204,15 +211,18 @@ push to main
 |---|---|
 | `DOCKERHUB_USERNAME` | DockerHub username |
 | `DOCKERHUB_TOKEN` | DockerHub access token |
-| `EC2_HOST` | EC2 public DNS / IP |
+| `EC2_HOST` | Staging EC2 public DNS / IP |
 | `EC2_USER` | SSH username (`ec2-user`) |
 | `EC2_SSH_KEY` | Private SSH key (contents of `~/.ssh/id_ed25519`) |
-| `DB_HOST` | RDS endpoint (from `terraform output rds_endpoint`) |
+| `DB_HOST` | Staging RDS endpoint (from `terraform output rds_endpoint`) |
 | `DB_NAME` | Database name (default: `appdb`) |
 | `DB_USER` | Database username (default: `dbadmin`) |
-| `DB_PASSWORD` | Database password |
+| `DB_PASSWORD` | Staging database password |
 | `AWS_REGION` | AWS region (e.g. `us-east-1`) |
 | `SLACK_WEBHOOK_URL` | Slack incoming webhook URL |
+| `PROD_EC2_HOST` | Production EC2 public DNS / IP |
+| `PROD_DB_HOST` | Production RDS endpoint |
+| `PROD_DB_PASSWORD` | Production database password |
 
 ---
 
@@ -298,3 +308,63 @@ Monitors app and ALB performance:
 - EC2 is only reachable on port 5000 from the ALB security group
 - RDS is only reachable on port 5432 from the EC2 security group
 - All user traffic enters through the ALB (single entry point)
+
+### Cost Optimization
+
+- **Single EC2 instance** — one `t3.micro` instead of an auto-scaling group; right-sized for the workload
+- **NAT Gateway removed** — EC2 is in a public subnet with a public IP, eliminating the ~$32/month NAT Gateway cost. RDS in the private subnet does not need internet access
+- **RDS `db.t3.micro`** — smallest instance class sufficient for the assignment workload
+- **20 GB gp2 storage** — minimum required; gp3 would be cheaper at scale
+- **No Multi-AZ for RDS** — disabled (`db_multi_az = false`) to avoid doubling RDS cost in a non-production environment; can be enabled via variable
+- **CloudWatch log retention set to 30 days** — avoids indefinite log storage accumulation
+- **Local Terraform backend** — avoids S3 + DynamoDB costs for state storage in a lab environment
+
+---
+
+## Approach
+
+### Infrastructure-first
+
+The project was built bottom-up: VPC and networking first, then compute (EC2), then database (RDS), then the load balancer, and finally monitoring. This order ensures each layer is tested before the next depends on it.
+
+### Terraform 0.12 compatibility
+
+The lab server runs Terraform 0.12.29. Several syntax differences from Terraform 1.x required adjustments:
+- Removed `required_providers` block with `source` attribute (not supported in 0.12)
+- Removed `sensitive = true` on variables (added in 0.14)
+- Used `vpc = true` instead of `domain = "vpc"` on EIP resources (old AWS provider attribute name)
+- Used `name` instead of `db_name` on `aws_db_instance` (old provider attribute)
+
+### Local Terraform backend
+
+The lab IAM role did not have S3 permissions, so the Terraform state is stored locally on the lab server (`terraform.tfstate`). In production this would use an S3 backend with DynamoDB locking.
+
+### Single EC2 in public subnet
+
+Originally the design had EC2 in a private subnet with a NAT Gateway, but the lab environment's IAM restrictions and cost considerations led to moving EC2 to the public subnet. RDS remains in private subnets with no internet access.
+
+### Custom CloudWatch metrics
+
+Rather than relying solely on ALB metrics, a Flask `before_request`/`after_request` middleware emits `RequestCount`, `ErrorCount`, and `Latency` directly to CloudWatch via boto3. Metrics are published both with an `Endpoint` dimension (per-route breakdown) and without dimensions (dashboard totals).
+
+### CI/CD pipeline design
+
+The pipeline uses four sequential gates — test, scan, build, deploy-staging — with a fifth (production) requiring manual approval. Security scanning runs on every push and PR, not just on merge, so vulnerabilities are caught early.
+
+---
+
+## Challenges and Resolutions
+
+| Challenge | Resolution |
+|---|---|
+| Terraform 0.12 incompatibility with `required_providers` and `sensitive` variables | Removed the `terraform {}` block and `sensitive = true` from variables; used only syntax supported by 0.12 |
+| S3 backend inaccessible due to lab IAM restrictions | Switched to local backend (`terraform.tfstate` on the server) |
+| RDS `db_name` attribute rejected by old AWS provider | Changed to `name` (the attribute name used in older provider versions) |
+| EIP `domain = "vpc"` rejected by old AWS provider | Changed to `vpc = true` |
+| ALB and RDS `AccessDenied` errors during `terraform apply` | Incrementally identified missing IAM actions and added them to the custom `TerraformDeployPolicy` |
+| CloudWatch dashboard `InvalidParameterInput` — missing `region` field | Added `"region"` to every metric widget's `properties` block in the dashboard JSON |
+| Flask unit test `ModuleNotFoundError` | Added `conftest.py` with `sys.path.insert` so pytest can find the `app` module |
+| Flask CVE in dependency scan (pip-audit) | Upgraded `flask` from 3.0.3 to 3.1.3 which patched the vulnerability |
+| Slack webhook returning exit code 3 (URL malformed) | The secret was accidentally set to the full `curl` command instead of just the URL — deleted and re-created the secret with only the webhook URL |
+| Custom CloudWatch metrics not appearing in dashboard | Dashboard widgets queried metrics without dimensions, but the middleware published only dimensioned metrics — fixed by also publishing dimension-less aggregate metrics alongside the per-endpoint ones |
+| EC2 public IP changes on every `terraform apply` | Updated `EC2_HOST` GitHub secret after each infrastructure re-apply |

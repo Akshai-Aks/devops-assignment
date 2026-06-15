@@ -24,7 +24,7 @@ resource "aws_instance" "app" {
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.ec2_cloudwatch.name
 
-  user_data = base64encode(<<-EOF
+  user_data = <<-EOF
     #!/bin/bash
     yum update -y
     yum install -y docker
@@ -77,7 +77,6 @@ resource "aws_instance" "app" {
       -a fetch-config -m ec2 \
       -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
   EOF
-  )
 
   tags = merge(local.tags, { Name = "${var.project}-app" })
 }

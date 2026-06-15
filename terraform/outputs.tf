@@ -54,5 +54,5 @@ output "rds_port" {
 
 output "db_name" {
   description = "PostgreSQL database name"
-  value       = aws_db_instance.postgres.name
+  value       = aws_db_instance.postgres.db_name
 }

@@ -181,8 +181,17 @@
                 "logs:FilterLogEvents",
                 "logs:ListTagsLogGroup",
                 "logs:TagLogGroup",
-                "logs:UntagLogGroup"
+                "logs:UntagLogGroup",
+                "logs:ListTagsForResource",
+                "logs:TagResource",
+                "logs:UntagResource"
             ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ServiceLinkedRoles",
+            "Effect": "Allow",
+            "Action": "iam:CreateServiceLinkedRole",
             "Resource": "*"
         }
     ]
